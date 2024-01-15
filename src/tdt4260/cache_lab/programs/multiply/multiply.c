@@ -16,7 +16,7 @@
 #include <unistd.h>
 
 /* Size of the matrices to multiply */
-#define SIZE 200
+#define SIZE 100
 
 /* HINT: The Makefile allows you to specify L1 and L2 block sizes as
  * compile time options.These may be specified when calling make,

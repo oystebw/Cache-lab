@@ -61,12 +61,11 @@ SimpleCache::recvReq(Addr req, int size)
         int way = lineWay(index, tag);
         DPRINTF(TDTSimpleCache, "Hit: way: %d\n", way);
 
-        // TODO: Associative: Update LRU info for line in entries
+        // DONE: Associative: Update LRU info for line in entries
+        this->entries.at(index).at(way)->lastUsed = 0;
+
         for(int i = 0; i < this->associativity; i++){
-            if(i == way){
-                this->entries.at(index).at(way)->lastUsed = 0;
-            }
-            else{
+            if(i != way){
                 this->entries.at(index).at(i)->lastUsed++;
             }
         }
@@ -111,14 +110,15 @@ SimpleCache::calculateTag(Addr req)
     // DONE: Direct-Mapped: Calculate tag
     // hint: req >> ((int)std::log2(...
 
-    return req >> ((int(std::log2(blockSize))) + (int)(std::log2(numSets))); // right shifts away the block size and index bits
+    // right shifts away the block size and index bits
+    return req >> ((int(std::log2(blockSize))) + (int)(std::log2(numSets))); 
 }
 
 int
 SimpleCache::calculateIndex(Addr req)
 {
     // DONE: Direct-Mapped: Calculate index
-    // right shift away the block bits and only include the index bits
+    // right shifts away the block bits and mask out the tag bits
     return (req >> ((int)std::log2(this->blockSize))) & (int)(this->numSets - 1);
 }
 

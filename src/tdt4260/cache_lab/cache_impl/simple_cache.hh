@@ -21,7 +21,7 @@ class SimpleCache : public Interface
         {
             Entry() {
                 tag = MaxAddr;
-                lastUsed = 0;
+                lastUsed = 1024; //large enough
             };
 
             Addr tag;

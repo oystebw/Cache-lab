@@ -24,7 +24,7 @@ SimpleCache::SimpleCache(int size, int blockSize, int associativity,
 
         // DONE: Associative: Allocate as many entries as there are ways
         // i.e. replace vector with vector of vector and build ways
-        for (int i = 0; i < associativity; i++){
+        for (int i = 0; i < this->associativity; i++){
             vec.push_back(new Entry());
         }
 
@@ -67,7 +67,7 @@ SimpleCache::recvReq(Addr req, int size)
                 this->entries.at(index).at(way)->lastUsed = 0;
             }
             else{
-                this->entries.at(index).at(way)->lastUsed++;
+                this->entries.at(index).at(i)->lastUsed++;
             }
         }
 
@@ -94,12 +94,11 @@ SimpleCache::recvResp(Addr resp)
     this->entries.at(index).at(way)->tag = tag;
 
     // TODO: Associative: Record LRU info for new line in entries
+    this->entries.at(index).at(way)->lastUsed = 0;
+
     for(int i = 0; i < this->associativity; i++){
-        if(i == way){
-            this->entries.at(index).at(way)->lastUsed = 0;
-        }
-        else{
-            this->entries.at(index).at(way)->lastUsed++;
+        if(i != way){
+            this->entries.at(index).at(i)->lastUsed++;
         }
     }
 
@@ -119,10 +118,8 @@ int
 SimpleCache::calculateIndex(Addr req)
 {
     // DONE: Direct-Mapped: Calculate index
-    req >>= ((int)std::log2(this->blockSize)); // right shift away the block bits
-    req &= (int)(this->numSets - 1); // only include the index bits
-
-    return req;
+    // right shift away the block bits and only include the index bits
+    return (req >> ((int)std::log2(this->blockSize))) & (int)(this->numSets - 1);
 }
 
 bool
@@ -149,23 +146,22 @@ SimpleCache::lineWay(int index, int tag)
             return i;
         }
     }
-    
-    return -1; //error
+    return -1;
 }
 
 int
 SimpleCache::oldestWay(int index)
 {
     // TODO: Associative: Determine the oldest way
-    int toBeTested;
-    int oldestWay = this->entries.at(index).at(0)->lastUsed;
-    for(int way = 1; way < this->associativity; way++){
-        toBeTested = this->entries.at(index).at(way)->lastUsed;
-        if(toBeTested > oldestWay){
-            oldestWay = toBeTested;
+    int largest = -1;
+    int largestWay = -1;
+    for(int way = 0; way < this->associativity; way++){
+        if(this->entries.at(index).at(way)->lastUsed > largest){
+            largest = this->entries.at(index).at(way)->lastUsed;
+            largestWay = way;
         }
     }
-    return oldestWay;
+    return largestWay;
 }
 
 void

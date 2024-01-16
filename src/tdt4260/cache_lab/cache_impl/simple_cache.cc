@@ -22,7 +22,7 @@ SimpleCache::SimpleCache(int size, int blockSize, int associativity,
     for (int i = 0; i < this->numSets; i++) {
         std::vector<Entry *> vec;
 
-        // TODO: Associative: Allocate as many entries as there are ways
+        // DONE: Associative: Allocate as many entries as there are ways
         // i.e. replace vector with vector of vector and build ways
         for (int i = 0; i < associativity; i++){
             vec.push_back(new Entry());
@@ -62,7 +62,15 @@ SimpleCache::recvReq(Addr req, int size)
         DPRINTF(TDTSimpleCache, "Hit: way: %d\n", way);
 
         // TODO: Associative: Update LRU info for line in entries
-        
+        for(int i = 0; i < this->associativity; i++){
+            if(i == way){
+                this->entries.at(index).at(way)->lastUsed = 0;
+            }
+            else{
+                this->entries.at(index).at(way)->lastUsed++;
+            }
+        }
+
         sendResp(req);
     } else{
         sendReq(req, size);
@@ -82,17 +90,26 @@ SimpleCache::recvResp(Addr resp)
 
     int way = oldestWay(index);
     DPRINTF(TDTSimpleCache, "Miss: Replaced way: %d\n", way);
-    // TODO: Direct-Mapped: Record new cache line in entries
-    this->entries.at(index).at(0)->tag = tag;
+    // DONE: Direct-Mapped: Record new cache line in entries
+    this->entries.at(index).at(way)->tag = tag;
 
     // TODO: Associative: Record LRU info for new line in entries
+    for(int i = 0; i < this->associativity; i++){
+        if(i == way){
+            this->entries.at(index).at(way)->lastUsed = 0;
+        }
+        else{
+            this->entries.at(index).at(way)->lastUsed++;
+        }
+    }
+
     sendResp(resp);
 }
 
 int
 SimpleCache::calculateTag(Addr req)
 {
-    // TODO: Direct-Mapped: Calculate tag
+    // DONE: Direct-Mapped: Calculate tag
     // hint: req >> ((int)std::log2(...
 
     return req >> ((int(std::log2(blockSize))) + (int)(std::log2(numSets))); // right shifts away the block size and index bits
@@ -101,7 +118,7 @@ SimpleCache::calculateTag(Addr req)
 int
 SimpleCache::calculateIndex(Addr req)
 {
-    // TODO: Direct-Mapped: Calculate index
+    // DONE: Direct-Mapped: Calculate index
     req >>= ((int)std::log2(this->blockSize)); // right shift away the block bits
     req &= (int)(this->numSets - 1); // only include the index bits
 
@@ -111,37 +128,44 @@ SimpleCache::calculateIndex(Addr req)
 bool
 SimpleCache::hasLine(int index, int tag)
 {
-    // TODO: Direct-Mapped: Check if line is already in cache
-    // if(this->associativity == 1){
-    //     return this->entries.at(index).at(0)->tag == tag;
-    // }
+    // DONE: Direct-Mapped: Check if line is already in cache
+    // return this->entries.at(index).at(0)->tag == tag;
 
-    // TODO: Associative: Check all possible ways
+    // DONE: Associative: Check all possible ways
     for(int i = 0; i < associativity; i++){
         if(this->entries.at(index).at(i)->tag == tag){
             return true;
         }
     }
     return false;
-   //return false;
 }
 
 int
 SimpleCache::lineWay(int index, int tag)
 {
-    // TODO: Associative: Find in which way a cache line is stored
+    // DONE: Associative: Find in which way a cache line is stored
     for(int i = 0; i < associativity; i++){
         if(this->entries.at(index).at(i)->tag == tag){
-            i;
+            return i;
         }
     }
+    
+    return -1; //error
 }
 
 int
 SimpleCache::oldestWay(int index)
 {
     // TODO: Associative: Determine the oldest way
-    return 0;
+    int toBeTested;
+    int oldestWay = this->entries.at(index).at(0)->lastUsed;
+    for(int way = 1; way < this->associativity; way++){
+        toBeTested = this->entries.at(index).at(way)->lastUsed;
+        if(toBeTested > oldestWay){
+            oldestWay = toBeTested;
+        }
+    }
+    return oldestWay;
 }
 
 void

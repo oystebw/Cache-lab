@@ -81,6 +81,7 @@ SimpleCache::recvResp(Addr resp)
     int way = oldestWay(index);
     DPRINTF(TDTSimpleCache, "Miss: Replaced way: %d\n", way);
     // TODO: Direct-Mapped: Record new cache line in entries
+    this->entries.at(index).at(0)->tag = tag;
 
     // TODO: Associative: Record LRU info for new line in entries
     sendResp(resp);
@@ -92,22 +93,27 @@ SimpleCache::calculateTag(Addr req)
     // TODO: Direct-Mapped: Calculate tag
     // hint: req >> ((int)std::log2(...
 
-    return req;
+    return req >> ((int(std::log2(blockSize))) + (int)(std::log2(numSets))); // right shifts away the block size and index bits
 }
 
 int
 SimpleCache::calculateIndex(Addr req)
 {
     // TODO: Direct-Mapped: Calculate index
-    return 0;
+    req >>= ((int)std::log2(this->blockSize)); // right shift away the block bits
+    req &= (int)(this->numSets - 1); // only include the index bits
+
+    return req;
 }
 
 bool
 SimpleCache::hasLine(int index, int tag)
 {
     // TODO: Direct-Mapped: Check if line is already in cache
+    return this->entries.at(index).at(0)->tag == tag;
+
     // TODO: Associative: Check all possible ways
-    return false;
+   //return false;
 }
 
 int

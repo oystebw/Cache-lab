@@ -24,7 +24,9 @@ SimpleCache::SimpleCache(int size, int blockSize, int associativity,
 
         // TODO: Associative: Allocate as many entries as there are ways
         // i.e. replace vector with vector of vector and build ways
-        vec.push_back(new Entry());
+        for (int i = 0; i < associativity; i++){
+            vec.push_back(new Entry());
+        }
 
         entries.push_back(vec);
     }
@@ -60,7 +62,7 @@ SimpleCache::recvReq(Addr req, int size)
         DPRINTF(TDTSimpleCache, "Hit: way: %d\n", way);
 
         // TODO: Associative: Update LRU info for line in entries
-
+        
         sendResp(req);
     } else{
         sendReq(req, size);
@@ -110,9 +112,17 @@ bool
 SimpleCache::hasLine(int index, int tag)
 {
     // TODO: Direct-Mapped: Check if line is already in cache
-    return this->entries.at(index).at(0)->tag == tag;
+    // if(this->associativity == 1){
+    //     return this->entries.at(index).at(0)->tag == tag;
+    // }
 
     // TODO: Associative: Check all possible ways
+    for(int i = 0; i < associativity; i++){
+        if(this->entries.at(index).at(i)->tag == tag){
+            return true;
+        }
+    }
+    return false;
    //return false;
 }
 
@@ -120,7 +130,11 @@ int
 SimpleCache::lineWay(int index, int tag)
 {
     // TODO: Associative: Find in which way a cache line is stored
-    return 0;
+    for(int i = 0; i < associativity; i++){
+        if(this->entries.at(index).at(i)->tag == tag){
+            i;
+        }
+    }
 }
 
 int

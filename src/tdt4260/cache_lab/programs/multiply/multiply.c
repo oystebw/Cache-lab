@@ -16,7 +16,10 @@
 #include <unistd.h>
 
 /* Size of the matrices to multiply */
-#define SIZE 100
+#define SIZE 1024
+#define BLOCKSIZEWIDTH 16
+#define BLOCKSIZEHEIGHT 8
+#define BASELINE 0
 
 /* HINT: The Makefile allows you to specify L1 and L2 block sizes as
  * compile time options.These may be specified when calling make,
@@ -29,6 +32,7 @@
 
 static double mat_a[SIZE][SIZE];
 static double mat_b[SIZE][SIZE];
+static double mat_b_trans[SIZE][SIZE];
 static double mat_c[SIZE][SIZE];
 static double mat_ref[SIZE][SIZE];
 
@@ -39,25 +43,57 @@ static double mat_ref[SIZE][SIZE];
 static void
 matmul_opt()
 {
-        /* TASK: Implement your optimized matrix multiplication
-         * here. It should calculate mat_c := mat_a * mat_b. See
-         * matmul_ref() for a reference solution.
-         */
+    int i, j, k, kk, jj, ii;
+    double sum;
 
-        int i, j, k;
-        
+    #if BASELINE
         for (j = 0; j < SIZE; j++) {
             for (i = 0; i < SIZE; i++) {
-                for (k = 0; k < SIZE; k++) {
-                    mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
-                }
+                    for (k = 0; k < SIZE; k++) {
+                            mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
+                    }
             }
         }
+    #endif
+
+    /* TASK: Implement your optimized matrix multiplication
+        * here. It should calculate mat_c := mat_a * mat_b. See
+        * matmul_ref() for a reference solution.
+        * 
+        * 0.8% D1 cache miss with SIZE = 1200
+        */
+    #if (BASELINE == 0)
+        // transposing
+        for(i = 0; i < SIZE; i++){
+            for(j = 0; j < SIZE; j++){
+                mat_b_trans[i][j] = mat_b[j][i];
+            }
+        }
+        
+        // blocking
+        for(kk = 0; kk < SIZE; kk += BLOCKSIZEWIDTH){
+            for(jj = 0; jj < SIZE; jj += BLOCKSIZEWIDTH){
+                for(ii = 0; ii < SIZE; ii += BLOCKSIZEHEIGHT){
+                    for(i = ii; i < ii + BLOCKSIZEHEIGHT; i++){
+                        for(j = jj; j < jj + BLOCKSIZEWIDTH; j++){
+                            sum = mat_c[i][j];
+                            for(k = kk; k < kk + BLOCKSIZEWIDTH; k++){
+                                sum += mat_a[i][k] * mat_b_trans[j][k];
+                            }
+                            mat_c[i][j] = sum;
+                        }
+                    }
+                }         
+            }
+        }
+    #endif
 }
 
 /**
  * Reference implementation of the matrix multiply algorithm. Used to
  * verify the answer from matmul_opt. Do NOT change this function.
+ * 
+ * 56% D1 cache miss with SIZE = 1200
  */
 static void
 matmul_ref()

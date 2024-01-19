@@ -15,11 +15,18 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define GEM5_DUMPSTATS  __asm__ __volatile__ (".word 0x040F; .word 0x0041;" : : "D" (0), "S" (0) :"memory")
+#define GEM5_RESETSTATS __asm__ __volatile__ (".word 0x040F; .word 0x0040;" : : "D" (0), "S" (0) :"memory")
+#define COMPILER_MEM_BARRIER __asm__ __volatile__ ("" : : "D" (0), "S" (0) :"memory")
+
 /* Size of the matrices to multiply */
-#define SIZE 1024
-#define BLOCKSIZEWIDTH 16
+#define SIZE 136
+#define BLOCKSIZEWIDTH 8
 #define BLOCKSIZEHEIGHT 8
 #define BASELINE 0
+#define TRANSPOSE 0
+#define BLOCKING 1
+#define SIM 1
 
 /* HINT: The Makefile allows you to specify L1 and L2 block sizes as
  * compile time options.These may be specified when calling make,
@@ -43,50 +50,70 @@ static double mat_ref[SIZE][SIZE];
 static void
 matmul_opt()
 {
+	/* TASK: Implement your optimized matrix multiplication
+	* here. It should calculate mat_c := mat_a * mat_b. See
+	* matmul_ref() for a reference solution.
+	*/
+
     int i, j, k, kk, jj, ii;
     double sum;
 
-    #if BASELINE
+    if(SIM){
+        COMPILER_MEM_BARRIER;
+        GEM5_RESETSTATS;
+    }
+
+
+    if(BASELINE){
+
         for (j = 0; j < SIZE; j++) {
             for (i = 0; i < SIZE; i++) {
-                    for (k = 0; k < SIZE; k++) {
-                            mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
-                    }
+				for (k = 0; k < SIZE; k++) {
+						mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
+				}
             }
         }
-    #endif
+    }
 
-    /* TASK: Implement your optimized matrix multiplication
-        * here. It should calculate mat_c := mat_a * mat_b. See
-        * matmul_ref() for a reference solution.
-        * 
-        * 0.8% D1 cache miss with SIZE = 1200
-        */
-    #if (BASELINE == 0)
-        // transposing
+    if(TRANSPOSE){
+
         for(i = 0; i < SIZE; i++){
             for(j = 0; j < SIZE; j++){
                 mat_b_trans[i][j] = mat_b[j][i];
             }
         }
-        
-        // blocking
+
+        for (j = 0; j < SIZE; j++) {
+            for (i = 0; i < SIZE; i++) {
+				for (k = 0; k < SIZE; k++) {
+						mat_c[i][j] += mat_a[i][k] * mat_b_trans[j][k];
+				}
+            }
+        }
+    }
+
+
+    if(BLOCKING){
+
         for(kk = 0; kk < SIZE; kk += BLOCKSIZEWIDTH){
-            for(jj = 0; jj < SIZE; jj += BLOCKSIZEWIDTH){
-                for(ii = 0; ii < SIZE; ii += BLOCKSIZEHEIGHT){
+			for(jj = 0; jj < SIZE; jj += BLOCKSIZEWIDTH){
+		        for(ii = 0; ii < SIZE; ii += BLOCKSIZEHEIGHT){
                     for(i = ii; i < ii + BLOCKSIZEHEIGHT; i++){
                         for(j = jj; j < jj + BLOCKSIZEWIDTH; j++){
                             sum = mat_c[i][j];
                             for(k = kk; k < kk + BLOCKSIZEWIDTH; k++){
-                                sum += mat_a[i][k] * mat_b_trans[j][k];
+                                sum += mat_a[i][k] * mat_b[k][j];
                             }
                             mat_c[i][j] = sum;
                         }
                     }
-                }         
+                } 
             }
         }
-    #endif
+    }
+	if(SIM){
+		GEM5_DUMPSTATS;
+	}
 }
 
 /**
@@ -101,11 +128,11 @@ matmul_ref()
         int i, j, k;
 
         for (j = 0; j < SIZE; j++) {
-                for (i = 0; i < SIZE; i++) {
-                        for (k = 0; k < SIZE; k++) {
-                                mat_ref[i][j] += mat_a[i][k] * mat_b[k][j];
-                        }
+            for (i = 0; i < SIZE; i++) {
+                for (k = 0; k < SIZE; k++) {
+                    mat_ref[i][j] += mat_a[i][k] * mat_b[k][j];
                 }
+            }
         }
 }
 

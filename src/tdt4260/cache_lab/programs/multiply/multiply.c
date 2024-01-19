@@ -20,13 +20,13 @@
 #define COMPILER_MEM_BARRIER __asm__ __volatile__ ("" : : "D" (0), "S" (0) :"memory")
 
 /* Size of the matrices to multiply */
-#define SIZE 136
+#define SIZE 128
 #define BLOCKSIZEWIDTH 8
 #define BLOCKSIZEHEIGHT 8
 #define BASELINE 0
 #define TRANSPOSE 0
 #define BLOCKING 1
-#define SIM 1
+#define SIM 0
 
 /* HINT: The Makefile allows you to specify L1 and L2 block sizes as
  * compile time options.These may be specified when calling make,
@@ -69,7 +69,7 @@ matmul_opt()
         for (j = 0; j < SIZE; j++) {
             for (i = 0; i < SIZE; i++) {
 				for (k = 0; k < SIZE; k++) {
-						mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
+					mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
 				}
             }
         }
